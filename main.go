@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type FieldType string
@@ -34,12 +35,13 @@ type Model struct {
 
 func initialModel() Model {
 	c2c := textinput.New()
-	c2c.Placeholder = "Target distance"
+	c2c.Placeholder = "0"
 	c2c.Prompt = "Target C2C Distance (in): "
+	c2c.Width = 10
 	c2c.Focus()
 
 	ratio := textinput.New()
-	ratio.Placeholder = "Ratio of 2 doubles torque, halves speed"
+	ratio.Placeholder = "1"
 	ratio.Prompt = "Target Ratio: "
 
 	fields := []FormField{
@@ -132,8 +134,11 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 }
 
 func (m Model) View() string {
-	s := "Pulley Optimizer\n\n"
+	title := titleStyle.Render("FRC Pulley Optimizer ")
+	slashes := slashStyle.Render("///////////////////////////////////////////////////////////////////////")
+	header := title + slashes + "\n\n"
 
+	leftColumn := ""
 	for i, f := range m.inputs {
 		if !f.Visible {
 			continue
@@ -151,16 +156,24 @@ func (m Model) View() string {
 				cursor = "> "
 				styledName = activeStyle.Render(f.Name)
 			}
-			s += fmt.Sprintf("%s%s %s\n", cursor, styledName, box)
+			leftColumn += fmt.Sprintf("%s%s %s\n", cursor, styledName, box)
 		} else {
-			s += f.Input.View() + "\n"
+			leftColumn += fixedWidthText.Render(f.Input.View()) + "\n"
 		}
 	}
 
-	s += "\nTop Results\n"
-	s += m.result
-	s += helpStyle.Render("\n\nPress `up/down` to navigate, 'left/right` to change value, q` to quit")
-	return s
+	boxTitle := boxTitleStyle.Render("Top Results")
+	rightColumnContent := boxTitle + "\n\n" + m.result
+
+	mainContent := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		leftColumnStyle.Render(leftColumn),
+		resultBoxStyle.Render(rightColumnContent),
+	)
+
+	footer := helpStyle.Render("\n\nPress `up/down` to navigate, q` to quit")
+
+	return header + mainContent + footer
 }
 
 func main() {
