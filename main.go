@@ -14,16 +14,18 @@ type FieldType string
 
 const (
 	TypeNumber   FieldType = "number"
-	TypeText     FieldType = "text"
 	TypeCheckbox FieldType = "checkbox"
+	TypeSelector FieldType = "selector"
 )
 
 type FormField struct {
-	Name    string
-	Type    FieldType
-	Input   textinput.Model
-	Checked bool // Used only if Checkbox
-	Visible bool
+	Name     string
+	Type     FieldType
+	Input    textinput.Model
+	Checked  bool // Used only if checkbox
+	Visible  bool
+	Options  []string // Used by selector
+	Selected int      // Used by selector
 }
 
 type Model struct {
@@ -48,19 +50,21 @@ func initialModel() Model {
 
 	c2c := textinput.New()
 	c2c.Placeholder = "0"
-	c2c.Prompt = "Target C2C Distance (in): "
+	c2c.Prompt = "Target C2C Distance: "
 	c2c.Validate = numberValidator
 	c2c.Focus()
 
 	ratio := textinput.New()
-	ratio.Placeholder = "1"
+	ratio.Placeholder = "1.0"
+	ratio.SetValue("1.0")
 	ratio.Prompt = "Target Ratio: "
 	ratio.Validate = numberValidator
 
 	fields := []FormField{
 		{Name: "C2C", Type: TypeNumber, Input: c2c, Visible: true},
+		{Name: "Unit", Type: TypeSelector, Visible: true, Options: []string{"in", "mm"}, Selected: 0},
 		{Name: "Ratio", Type: TypeNumber, Input: ratio, Visible: true},
-		{Name: "Use Available Belts", Type: TypeCheckbox, Visible: true},
+		{Name: "Use Available Belts", Type: TypeCheckbox, Visible: true, Checked: true},
 	}
 
 	fields, _ = updateFocusStyles(fields, 0)
@@ -88,9 +92,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "up", "down", "tab", "shift+tab":
 			if msg.String() == "up" || msg.String() == "shift+tab" {
-				m.focus = (m.focus - 1 + len(m.inputs)) % len(m.inputs)
+				for {
+					m.focus = (m.focus - 1 + len(m.inputs)) % len(m.inputs)
+					if m.inputs[m.focus].Visible {
+						break
+					}
+				}
 			} else {
-				m.focus = (m.focus + 1) % len(m.inputs)
+				for {
+					m.focus = (m.focus + 1) % len(m.inputs)
+					if m.inputs[m.focus].Visible {
+						break
+					}
+				}
 			}
 
 			var cmd tea.Cmd
@@ -99,28 +113,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "left", "right":
 			passToInput = false
-			valStr := m.inputs[m.focus].Input.Value()
-			val, err := strconv.ParseFloat(valStr, 64)
-			if err != nil {
-				val = 0
-			}
+			f := &m.inputs[m.focus]
+			switch f.Type {
+			case TypeNumber:
+				valStr := m.inputs[m.focus].Input.Value()
+				val, err := strconv.ParseFloat(valStr, 64)
+				if err != nil {
+					val = 0
+				}
 
-			step := 0.1
-			if m.focus == 1 {
-				step = .2
-			}
+				step := 0.1
+				if m.inputs[m.focus].Name == "Ratio" {
+					step = .2
+				}
 
-			if msg.String() == "right" {
-				val += step
-			} else if msg.String() == "left" {
-				val -= step
-			}
+				if msg.String() == "right" {
+					val += step
+				} else if msg.String() == "left" {
+					val -= step
+				}
 
-			m.inputs[m.focus].Input.SetValue(fmt.Sprintf("%.1f", val))
+				f.Input.SetValue(fmt.Sprintf("%.1f", val))
+			case TypeSelector:
+				if msg.String() == "right" {
+					f.Selected = (f.Selected + 1) % len(f.Options)
+				} else if msg.String() == "left" {
+					f.Selected = (f.Selected - 1 + len(f.Options)) % len(f.Options)
+				}
+			case TypeCheckbox:
+				f.Checked = !f.Checked
+			}
 
 		case " ", "enter":
-			if m.inputs[m.focus].Type == TypeCheckbox {
-				m.inputs[m.focus].Checked = !m.inputs[m.focus].Checked
+			f := &m.inputs[m.focus]
+			switch f.Type {
+			case TypeCheckbox:
+				f.Checked = !f.Checked
+			case TypeSelector:
+				f.Selected = (f.Selected + 1) % len(f.Options)
 			}
 		}
 	}
@@ -131,16 +161,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	c2cVal := m.inputs[0].Input.Value()
-	ratioVal := m.inputs[1].Input.Value()
-	useNotion := m.inputs[2].Checked
-	m.result = fmt.Sprintf("Calculating for C2C: %s, Ratio %s, Using Notion %v", c2cVal, ratioVal, useNotion)
+	unitVal := m.inputs[1].Options[m.inputs[1].Selected]
+	ratioVal := m.inputs[2].Input.Value()
+	useAvailableBelts := m.inputs[3].Checked
+	m.result = fmt.Sprintf("Calculating for C2C: %s, Ratio %s, Pitch %s, Using Belts %v", c2cVal, ratioVal, unitVal, useAvailableBelts)
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
-	if m.inputs[m.focus].Type != TypeCheckbox {
+	if m.inputs[m.focus].Type == TypeNumber {
 		m.inputs[m.focus].Input, cmd = m.inputs[m.focus].Input.Update(msg)
 	}
 	return cmd
@@ -157,7 +188,8 @@ func (m Model) View() string {
 			continue
 		}
 
-		if f.Type == TypeCheckbox {
+		switch f.Type {
+		case TypeCheckbox:
 			box := "[ ]"
 			if f.Checked {
 				box = "[x]"
@@ -170,7 +202,25 @@ func (m Model) View() string {
 				styledName = activeStyle.Render(f.Name)
 			}
 			leftColumn += fmt.Sprintf("%s%s %s\n", cursor, styledName, box)
-		} else {
+		case TypeSelector:
+			cursor := ""
+			styledName := unActiveStyle.Render(f.Name)
+			if i == m.focus {
+				cursor = "> "
+				styledName = activeStyle.Render(f.Name)
+			}
+
+			optsStr := ""
+			for j, opt := range f.Options {
+				if j == f.Selected {
+					optsStr += activeTextStyle.Render(fmt.Sprintf("[%s] ", opt))
+				} else {
+					optsStr += unActiveTextStyle.Render(fmt.Sprintf(" %s  ", opt))
+				}
+			}
+			leftColumn += fmt.Sprintf("%s%s %s\n", cursor, styledName, optsStr)
+
+		default:
 			inputView := f.Input.View()
 
 			if f.Input.Err != nil {
@@ -207,7 +257,7 @@ func updateFocusStyles(fields []FormField, focus int) ([]FormField, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	for i := range fields {
-		if fields[i].Type == TypeCheckbox {
+		if fields[i].Type == TypeCheckbox || fields[i].Type == TypeSelector {
 			continue
 		}
 		if i == focus {
