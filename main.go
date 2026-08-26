@@ -171,7 +171,7 @@ func (m Model) View() string {
 		resultBoxStyle.Render(rightColumnContent),
 	)
 
-	footer := helpStyle.Render("\n\nPress `up/down` to navigate, q` to quit")
+	footer := helpStyle.Render("\n\nPress `up/down` to navigate, `q` to quit")
 
 	return header + mainContent + footer
 }
