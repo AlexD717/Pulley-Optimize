@@ -3,11 +3,12 @@ package main
 import "github.com/charmbracelet/lipgloss"
 
 var (
+	errorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff3700"))
 	activeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#c75d00")).Bold(true)
 	unActiveStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#cccccc"))
 	activeTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#d2d2d2")).Bold(true)
 	unActiveTextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#bebebe"))
-	fixedWidthText    = lipgloss.NewStyle().Width(40)
+	fixedWidthText    = lipgloss.NewStyle().Width(60)
 
 	titleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#009bce")).Bold(true)
 	slashStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#009bce"))

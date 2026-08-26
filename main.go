@@ -27,27 +27,40 @@ type FormField struct {
 }
 
 type Model struct {
-	inputs    []FormField
-	focus     int
-	useNotion bool
-	result    string
+	inputs            []FormField
+	focus             int
+	useAvailableBelts bool
+	result            string
 }
 
 func initialModel() Model {
+	numberValidator := func(s string) error {
+		if s == "" || s == "." {
+			return nil
+		}
+
+		_, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return fmt.Errorf("Must be a number")
+		}
+		return nil
+	}
+
 	c2c := textinput.New()
 	c2c.Placeholder = "0"
 	c2c.Prompt = "Target C2C Distance (in): "
-	c2c.Width = 10
+	c2c.Validate = numberValidator
 	c2c.Focus()
 
 	ratio := textinput.New()
 	ratio.Placeholder = "1"
 	ratio.Prompt = "Target Ratio: "
+	ratio.Validate = numberValidator
 
 	fields := []FormField{
 		{Name: "C2C", Type: TypeNumber, Input: c2c, Visible: true},
 		{Name: "Ratio", Type: TypeNumber, Input: ratio, Visible: true},
-		{Name: "Use Notion", Type: TypeCheckbox, Visible: true},
+		{Name: "Use Available Belts", Type: TypeCheckbox, Visible: true},
 	}
 
 	fields, _ = updateFocusStyles(fields, 0)
@@ -135,7 +148,7 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 
 func (m Model) View() string {
 	title := titleStyle.Render("FRC Pulley Optimizer ")
-	slashes := slashStyle.Render("///////////////////////////////////////////////////////////////////////")
+	slashes := slashStyle.Render("///////////////////////////////////////////////////////////////////////////////////////////")
 	header := title + slashes + "\n\n"
 
 	leftColumn := ""
@@ -158,7 +171,13 @@ func (m Model) View() string {
 			}
 			leftColumn += fmt.Sprintf("%s%s %s\n", cursor, styledName, box)
 		} else {
-			leftColumn += fixedWidthText.Render(f.Input.View()) + "\n"
+			inputView := f.Input.View()
+
+			if f.Input.Err != nil {
+				inputView += errorStyle.Render("  <- " + f.Input.Err.Error())
+			}
+
+			leftColumn += fixedWidthText.Render(inputView) + "\n"
 		}
 	}
 
@@ -171,7 +190,8 @@ func (m Model) View() string {
 		resultBoxStyle.Render(rightColumnContent),
 	)
 
-	footer := helpStyle.Render("\n\nPress `up/down` to navigate, `q` to quit")
+	endSlashes := slashStyle.Render("\n\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////")
+	footer := endSlashes + helpStyle.Render("\n\nPress `up/down` to navigate, `q` to quit")
 
 	return header + mainContent + footer
 }
