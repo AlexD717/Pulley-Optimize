@@ -11,7 +11,7 @@ import (
 
 type Model struct {
 	inputs []textinput.Model
-	focus int
+	focus  int
 	result string
 }
 
@@ -25,13 +25,15 @@ func initialModel() Model {
 	inputs = append(inputs, c2c)
 
 	ratio := textinput.New()
-	ratio.Placeholder = "1.0"
+	ratio.Placeholder = "Ratio of 2 doubles torque, halves speed"
 	ratio.Prompt = "Target Ratio: "
 	inputs = append(inputs, ratio)
 
-	return  Model{
+	inputs, _ = updateFocusStyles(inputs, 0)
+
+	return Model{
 		inputs: inputs,
-		focus: 0,
+		focus:  0,
 		result: "Waiting on input...",
 	}
 }
@@ -46,25 +48,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String(){
+		switch msg.String() {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
-		
+
 		case "up", "down", "tab", "shift+tab":
-			if msg.String() == "up" || msg.String() == "shift+tab"{
+			if msg.String() == "up" || msg.String() == "shift+tab" {
 				m.focus = (m.focus - 1 + len(m.inputs)) % len(m.inputs)
 			} else {
 				m.focus = (m.focus + 1) % len(m.inputs)
 			}
 
-			for i := range m.inputs {
-				if i == m.focus {
-					cmd := m.inputs[i].Focus()
-					cmds = append(cmds, cmd)
-				} else {
-					m.inputs[i].Blur()
-				}
-			}
+			var cmd tea.Cmd
+			m.inputs, cmd = updateFocusStyles(m.inputs, m.focus)
+			cmds = append(cmds, cmd)
 
 		case "left", "right":
 			passToInput = false
@@ -75,22 +72,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			step := 0.1
-			if m.focus == 1{
+			if m.focus == 1 {
 				step = .2
 			}
 
-			if msg.String() == "right"{
+			if msg.String() == "right" {
 				val += step
 			} else if msg.String() == "left" {
 				val -= step
 			}
 
 			m.inputs[m.focus].SetValue(fmt.Sprintf("%.1f", val))
+		}
 	}
-}
 
-	
-	if (passToInput) {
+	if passToInput {
 		cmd := m.updateInputs(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -115,13 +111,32 @@ func (m Model) View() string {
 	}
 	s += "\nTop Results\n"
 	s += m.result
-	s += "\n\nPress `up/down` to navigate, `q` to quit"
-	return  s
+	s += helpStyle.Render("\n\nPress `up/down` to navigate, 'left/right` to change value, q` to quit")
+	return s
 }
 
-func main(){
+func main() {
 	if _, err := tea.NewProgram(initialModel()).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
+}
+
+func updateFocusStyles(inputs []textinput.Model, focus int) ([]textinput.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
+	for i := range inputs {
+		if i == focus {
+			cmd := inputs[i].Focus()
+			cmds = append(cmds, cmd)
+			inputs[i].PromptStyle = activeStyle
+			inputs[i].TextStyle = activeTextStyle
+		} else {
+			inputs[i].Blur()
+			inputs[i].PromptStyle = unActiveStyle
+			inputs[i].TextStyle = unActiveTextStyle
+		}
+	}
+
+	return inputs, tea.Batch(cmds...)
 }
