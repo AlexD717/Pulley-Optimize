@@ -9,30 +9,49 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type FieldType string
+
+const (
+	TypeNumber   FieldType = "number"
+	TypeText     FieldType = "text"
+	TypeCheckbox FieldType = "checkbox"
+)
+
+type FormField struct {
+	Name    string
+	Type    FieldType
+	Input   textinput.Model
+	Checked bool // Used only if Checkbox
+	Visible bool
+}
+
 type Model struct {
-	inputs []textinput.Model
-	focus  int
-	result string
+	inputs    []FormField
+	focus     int
+	useNotion bool
+	result    string
 }
 
 func initialModel() Model {
-	var inputs []textinput.Model
-
 	c2c := textinput.New()
 	c2c.Placeholder = "Target distance"
 	c2c.Prompt = "Target C2C Distance (in): "
 	c2c.Focus()
-	inputs = append(inputs, c2c)
 
 	ratio := textinput.New()
 	ratio.Placeholder = "Ratio of 2 doubles torque, halves speed"
 	ratio.Prompt = "Target Ratio: "
-	inputs = append(inputs, ratio)
 
-	inputs, _ = updateFocusStyles(inputs, 0)
+	fields := []FormField{
+		{Name: "C2C", Type: TypeNumber, Input: c2c, Visible: true},
+		{Name: "Ratio", Type: TypeNumber, Input: ratio, Visible: true},
+		{Name: "Use Notion", Type: TypeCheckbox, Visible: true},
+	}
+
+	fields, _ = updateFocusStyles(fields, 0)
 
 	return Model{
-		inputs: inputs,
+		inputs: fields,
 		focus:  0,
 		result: "Waiting on input...",
 	}
@@ -65,7 +84,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "left", "right":
 			passToInput = false
-			valStr := m.inputs[m.focus].Value()
+			valStr := m.inputs[m.focus].Input.Value()
 			val, err := strconv.ParseFloat(valStr, 64)
 			if err != nil {
 				val = 0
@@ -82,7 +101,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				val -= step
 			}
 
-			m.inputs[m.focus].SetValue(fmt.Sprintf("%.1f", val))
+			m.inputs[m.focus].Input.SetValue(fmt.Sprintf("%.1f", val))
+
+		case " ", "enter":
+			if m.inputs[m.focus].Type == TypeCheckbox {
+				m.inputs[m.focus].Checked = !m.inputs[m.focus].Checked
+			}
 		}
 	}
 
@@ -91,24 +115,48 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	c2cVal := m.inputs[0].Value()
-	ratioVal := m.inputs[1].Value()
-	m.result = fmt.Sprintf("Calcualting for C2C: %s, Ratio %s", c2cVal, ratioVal)
+	c2cVal := m.inputs[0].Input.Value()
+	ratioVal := m.inputs[1].Input.Value()
+	useNotion := m.inputs[2].Checked
+	m.result = fmt.Sprintf("Calculating for C2C: %s, Ratio %s, Using Notion %v", c2cVal, ratioVal, useNotion)
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
-	m.inputs[m.focus], cmd = m.inputs[m.focus].Update(msg)
+	if m.inputs[m.focus].Type != TypeCheckbox {
+		m.inputs[m.focus].Input, cmd = m.inputs[m.focus].Input.Update(msg)
+	}
 	return cmd
 }
 
 func (m Model) View() string {
 	s := "Pulley Optimizer\n\n"
-	for i := range m.inputs {
-		s += m.inputs[i].View() + "\n"
+
+	for i, f := range m.inputs {
+		if !f.Visible {
+			continue
+		}
+
+		if f.Type == TypeCheckbox {
+			box := "[ ]"
+			if f.Checked {
+				box = "[x]"
+			}
+
+			cursor := ""
+			styledName := unActiveStyle.Render(f.Name)
+			if i == m.focus {
+				cursor = "> "
+				styledName = activeStyle.Render(f.Name)
+			}
+			s += fmt.Sprintf("%s%s %s\n", cursor, styledName, box)
+		} else {
+			s += f.Input.View() + "\n"
+		}
 	}
+
 	s += "\nTop Results\n"
 	s += m.result
 	s += helpStyle.Render("\n\nPress `up/down` to navigate, 'left/right` to change value, q` to quit")
@@ -122,21 +170,24 @@ func main() {
 	}
 }
 
-func updateFocusStyles(inputs []textinput.Model, focus int) ([]textinput.Model, tea.Cmd) {
+func updateFocusStyles(fields []FormField, focus int) ([]FormField, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	for i := range inputs {
+	for i := range fields {
+		if fields[i].Type == TypeCheckbox {
+			continue
+		}
 		if i == focus {
-			cmd := inputs[i].Focus()
+			cmd := fields[i].Input.Focus()
 			cmds = append(cmds, cmd)
-			inputs[i].PromptStyle = activeStyle
-			inputs[i].TextStyle = activeTextStyle
+			fields[i].Input.PromptStyle = activeStyle
+			fields[i].Input.TextStyle = activeTextStyle
 		} else {
-			inputs[i].Blur()
-			inputs[i].PromptStyle = unActiveStyle
-			inputs[i].TextStyle = unActiveTextStyle
+			fields[i].Input.Blur()
+			fields[i].Input.PromptStyle = unActiveStyle
+			fields[i].Input.TextStyle = unActiveTextStyle
 		}
 	}
 
-	return inputs, tea.Batch(cmds...)
+	return fields, tea.Batch(cmds...)
 }
