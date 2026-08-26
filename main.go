@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -41,6 +42,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+	passToInput := true
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -63,11 +65,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.inputs[i].Blur()
 				}
 			}
-		}
-	}
 
-	cmd := m.updateInputs(msg)
-	cmds = append(cmds, cmd)
+		case "left", "right":
+			passToInput = false
+			valStr := m.inputs[m.focus].Value()
+			val, err := strconv.ParseFloat(valStr, 64)
+			if err != nil {
+				val = 0
+			}
+
+			step := 0.1
+			if m.focus == 1{
+				step = .2
+			}
+
+			if msg.String() == "right"{
+				val += step
+			} else if msg.String() == "left" {
+				val -= step
+			}
+
+			m.inputs[m.focus].SetValue(fmt.Sprintf("%.1f", val))
+	}
+}
+
+	
+	if (passToInput) {
+		cmd := m.updateInputs(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	c2cVal := m.inputs[0].Value()
 	ratioVal := m.inputs[1].Value()
