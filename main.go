@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 )
 
 type FieldType string
@@ -29,36 +30,23 @@ type FormField struct {
 }
 
 type Model struct {
-	inputs            []FormField
-	focus             int
-	useAvailableBelts bool
-	result            string
+	Inputs            []FormField
+	Focus             int
+	UseAvailableBelts bool
+	Results           []PulleyResult
+	ErrorMsg          string
 }
 
 func initialModel() Model {
-	numberValidator := func(s string) error {
-		if s == "" || s == "." {
-			return nil
-		}
-
-		_, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return fmt.Errorf("Must be a number")
-		}
-		return nil
-	}
-
 	c2c := textinput.New()
 	c2c.Placeholder = "0"
 	c2c.Prompt = "Target C2C Distance: "
-	c2c.Validate = numberValidator
 	c2c.Focus()
 
 	ratio := textinput.New()
 	ratio.Placeholder = "1.0"
 	ratio.SetValue("1.0")
 	ratio.Prompt = "Target Ratio: "
-	ratio.Validate = numberValidator
 
 	fields := []FormField{
 		{Name: "C2C", Type: TypeNumber, Input: c2c, Visible: true},
@@ -70,9 +58,11 @@ func initialModel() Model {
 	fields, _ = updateFocusStyles(fields, 0)
 
 	return Model{
-		inputs: fields,
-		focus:  0,
-		result: "Waiting on input...",
+		Inputs:            fields,
+		Focus:             0,
+		UseAvailableBelts: true,
+		Results:           []PulleyResult{},
+		ErrorMsg:          "",
 	}
 }
 
@@ -93,37 +83,37 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "down", "tab", "shift+tab":
 			if msg.String() == "up" || msg.String() == "shift+tab" {
 				for {
-					m.focus = (m.focus - 1 + len(m.inputs)) % len(m.inputs)
-					if m.inputs[m.focus].Visible {
+					m.Focus = (m.Focus - 1 + len(m.Inputs)) % len(m.Inputs)
+					if m.Inputs[m.Focus].Visible {
 						break
 					}
 				}
 			} else {
 				for {
-					m.focus = (m.focus + 1) % len(m.inputs)
-					if m.inputs[m.focus].Visible {
+					m.Focus = (m.Focus + 1) % len(m.Inputs)
+					if m.Inputs[m.Focus].Visible {
 						break
 					}
 				}
 			}
 
 			var cmd tea.Cmd
-			m.inputs, cmd = updateFocusStyles(m.inputs, m.focus)
+			m.Inputs, cmd = updateFocusStyles(m.Inputs, m.Focus)
 			cmds = append(cmds, cmd)
 
 		case "left", "right":
 			passToInput = false
-			f := &m.inputs[m.focus]
+			f := &m.Inputs[m.Focus]
 			switch f.Type {
 			case TypeNumber:
-				valStr := m.inputs[m.focus].Input.Value()
+				valStr := m.Inputs[m.Focus].Input.Value()
 				val, err := strconv.ParseFloat(valStr, 64)
 				if err != nil {
 					val = 0
 				}
 
 				step := 0.1
-				if m.inputs[m.focus].Name == "Ratio" {
+				if m.Inputs[m.Focus].Name == "Ratio" {
 					step = .2
 				}
 
@@ -145,7 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case " ", "enter":
-			f := &m.inputs[m.focus]
+			f := &m.Inputs[m.Focus]
 			switch f.Type {
 			case TypeCheckbox:
 				f.Checked = !f.Checked
@@ -160,19 +150,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	c2cVal := m.inputs[0].Input.Value()
-	unitVal := m.inputs[1].Options[m.inputs[1].Selected]
-	ratioVal := m.inputs[2].Input.Value()
-	useAvailableBelts := m.inputs[3].Checked
-	m.result = fmt.Sprintf("Calculating for C2C: %s, Ratio %s, Pitch %s, Using Belts %v", c2cVal, ratioVal, unitVal, useAvailableBelts)
+	m = m.updateResults()
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
-	if m.inputs[m.focus].Type == TypeNumber {
-		m.inputs[m.focus].Input, cmd = m.inputs[m.focus].Input.Update(msg)
+	if m.Inputs[m.Focus].Type == TypeNumber {
+		m.Inputs[m.Focus].Input, cmd = m.Inputs[m.Focus].Input.Update(msg)
 	}
 	return cmd
 }
@@ -183,9 +169,14 @@ func (m Model) View() string {
 	header := title + slashes + "\n\n"
 
 	leftColumn := ""
-	for i, f := range m.inputs {
+	for i, f := range m.Inputs {
 		if !f.Visible {
 			continue
+		}
+
+		cursor := ""
+		if i == m.Focus {
+			cursor = "> "
 		}
 
 		switch f.Type {
@@ -195,18 +186,14 @@ func (m Model) View() string {
 				box = "[x]"
 			}
 
-			cursor := ""
 			styledName := unActiveStyle.Render(f.Name)
-			if i == m.focus {
-				cursor = "> "
+			if i == m.Focus {
 				styledName = activeStyle.Render(f.Name)
 			}
-			leftColumn += fmt.Sprintf("%s%s %s\n", cursor, styledName, box)
+			leftColumn += fmt.Sprintf("%s %s\n", cursor+styledName, box)
 		case TypeSelector:
-			cursor := ""
 			styledName := unActiveStyle.Render(f.Name)
-			if i == m.focus {
-				cursor = "> "
+			if i == m.Focus {
 				styledName = activeStyle.Render(f.Name)
 			}
 
@@ -218,7 +205,7 @@ func (m Model) View() string {
 					optsStr += unActiveTextStyle.Render(fmt.Sprintf(" %s  ", opt))
 				}
 			}
-			leftColumn += fmt.Sprintf("%s%s %s\n", cursor, styledName, optsStr)
+			leftColumn += fmt.Sprintf("%s %s\n", cursor+styledName, optsStr)
 
 		default:
 			inputView := f.Input.View()
@@ -227,12 +214,41 @@ func (m Model) View() string {
 				inputView += errorStyle.Render("  <- " + f.Input.Err.Error())
 			}
 
-			leftColumn += fixedWidthText.Render(inputView) + "\n"
+			leftColumn += fmt.Sprintf("%s\n", fixedWidthText.Render(cursor+inputView))
 		}
 	}
 
 	boxTitle := boxTitleStyle.Render("Top Results")
-	rightColumnContent := boxTitle + "\n\n" + m.result
+
+	var resultsString string
+
+	if m.ErrorMsg != "" {
+		resultsString = errorStyle.Render(m.ErrorMsg)
+	} else if len(m.Results) == 0 {
+		resultsString = "No valid combination found"
+	} else {
+		t := table.New().
+			Border(lipgloss.NormalBorder()).
+			BorderStyle(resultsTableStyle).
+			Headers("Pulley 1", "Pulley 2", "Ratio", "Belt Length", "Belt Width", "Slack", "Available")
+
+		for _, res := range m.Results {
+			var ratio float64 = float64(res.Pulley2) / float64(res.Pulley1)
+			t.Row(
+				fmt.Sprintf("%dT", res.Pulley1),
+				fmt.Sprintf("%dT", res.Pulley2),
+				fmt.Sprintf("%.2f", ratio),
+				fmt.Sprintf("%d mm", res.BeltLength),
+				fmt.Sprintf("%.1f mm", res.BeltWidth),
+				fmt.Sprintf("%.2f mm", res.Slack),
+				formatAvailabilityBool(res.IsAvailable),
+			)
+		}
+
+		resultsString = t.Render()
+	}
+
+	rightColumnContent := boxTitle + "\n\n" + resultsString
 
 	mainContent := lipgloss.JoinHorizontal(
 		lipgloss.Top,
@@ -241,7 +257,7 @@ func (m Model) View() string {
 	)
 
 	endSlashes := slashStyle.Render("\n\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////")
-	footer := endSlashes + helpStyle.Render("\n\nPress `up/down` to navigate, `q` to quit")
+	footer := endSlashes + helpStyle.Render("\n\nPress `up/down` to navigate, `left/right` to change values, `q` to quit")
 
 	return header + mainContent + footer
 }
@@ -273,4 +289,30 @@ func updateFocusStyles(fields []FormField, focus int) ([]FormField, tea.Cmd) {
 	}
 
 	return fields, tea.Batch(cmds...)
+}
+
+func (m Model) updateResults() Model {
+	c2cVal := m.Inputs[0].Input.Value()
+	unitVal := m.Inputs[1].Options[m.Inputs[1].Selected]
+	ratioVal := m.Inputs[2].Input.Value()
+	useAvailableBelts := m.Inputs[3].Checked
+
+	results, err := RunCalculator(c2cVal, ratioVal, unitVal, useAvailableBelts)
+	if err != nil {
+		m.ErrorMsg = err.Error()
+		m.Results = nil
+	} else {
+		m.ErrorMsg = ""
+		m.Results = results
+	}
+
+	return m
+}
+
+func formatAvailabilityBool(isAvailable bool) string {
+	if isAvailable {
+		return "Yes"
+	} else {
+		return "No"
+	}
 }

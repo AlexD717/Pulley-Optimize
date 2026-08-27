@@ -8,7 +8,7 @@ var (
 	unActiveStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#cccccc"))
 	activeTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#d2d2d2")).Bold(true)
 	unActiveTextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#bebebe"))
-	fixedWidthText    = lipgloss.NewStyle().Width(60)
+	fixedWidthText    = lipgloss.NewStyle().Width(35)
 
 	titleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#009bce")).Bold(true)
 	slashStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#009bce"))
@@ -18,8 +18,7 @@ var (
 	resultBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#0707b8")).
-			Padding(1, 2).
-			Width(45).
-			Height(12)
-	leftColumnStyle = lipgloss.NewStyle().PaddingRight(5)
+			Padding(1, 2)
+	resultsTableStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff"))
+	leftColumnStyle   = lipgloss.NewStyle().PaddingRight(5)
 )
