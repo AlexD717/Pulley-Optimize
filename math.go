@@ -17,13 +17,13 @@ type Belt struct {
 }
 
 type PulleyResult struct {
-	Pulley1     int
-	Pulley2     int
-	BeltLength  int
-	BeltWidth   float64
-	Slack       float64
-	IsAvailable bool
-	Score       float64
+	Pulley1    int
+	Pulley2    int
+	BeltLength int
+	BeltWidth  float64
+	Slack      float64
+	Count      int
+	Score      float64
 }
 
 func RunCalculator(c2cStr string, ratioStr string, unit string, useBelts bool) ([]PulleyResult, error) {
@@ -51,8 +51,8 @@ func RunCalculator(c2cStr string, ratioStr string, unit string, useBelts bool) (
 
 	minPulley := 8
 	maxPulley := 100
-	maxSlack := 1.5
-	minSlack := -0.2
+	maxSlack := 0.2
+	minSlack := -0.5
 
 	slackPenaltyMult := 15
 	ratioPenaltyMult := 5
@@ -76,13 +76,13 @@ func RunCalculator(c2cStr string, ratioStr string, unit string, useBelts bool) (
 				score += calculatePulleySizeScore(pulley2)
 
 				pulleyResults = append(pulleyResults, PulleyResult{
-					Pulley1:     pulley1,
-					Pulley2:     pulley2,
-					BeltLength:  int(belt.Length),
-					BeltWidth:   belt.Width,
-					Slack:       slack,
-					IsAvailable: belt.Count > 0,
-					Score:       score,
+					Pulley1:    pulley1,
+					Pulley2:    pulley2,
+					BeltLength: int(belt.Length),
+					BeltWidth:  belt.Width,
+					Slack:      slack,
+					Count:      belt.Count,
+					Score:      score,
 				})
 			}
 		}
@@ -115,7 +115,7 @@ func CalculateSlack(targetC2C float64, pulley1 int, pulley2 int, beltLength floa
 	}
 	actualC2C := (pitch / 4.0) * (y + math.Sqrt(radicand))
 
-	return actualC2C - targetC2C
+	return targetC2C - actualC2C
 }
 
 func LoadInventory(filepath string) []Belt {

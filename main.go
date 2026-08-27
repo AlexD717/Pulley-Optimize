@@ -230,7 +230,7 @@ func (m Model) View() string {
 		t := table.New().
 			Border(lipgloss.NormalBorder()).
 			BorderStyle(resultsTableStyle).
-			Headers("Pulley 1", "Pulley 2", "Ratio", "Belt Length", "Belt Width", "Slack", "Available")
+			Headers("Pulley 1", "Pulley 2", "Ratio", "Belt Length", "Belt Width", "Slack", "Count")
 
 		for _, res := range m.Results {
 			var ratio float64 = float64(res.Pulley2) / float64(res.Pulley1)
@@ -238,10 +238,10 @@ func (m Model) View() string {
 				fmt.Sprintf("%dT", res.Pulley1),
 				fmt.Sprintf("%dT", res.Pulley2),
 				fmt.Sprintf("%.2f", ratio),
-				fmt.Sprintf("%d mm", res.BeltLength),
+				fmt.Sprintf("%d mm (%dT) ", res.BeltLength, res.BeltLength/5),
 				fmt.Sprintf("%.1f mm", res.BeltWidth),
 				fmt.Sprintf("%.2f mm", res.Slack),
-				FormatAvailabilityBool(res.IsAvailable),
+				fmt.Sprintf("%d", res.Count),
 			)
 		}
 
@@ -307,12 +307,4 @@ func (m Model) updateResults() Model {
 	}
 
 	return m
-}
-
-func FormatAvailabilityBool(isAvailable bool) string {
-	if isAvailable {
-		return "Yes"
-	} else {
-		return "No"
-	}
 }
