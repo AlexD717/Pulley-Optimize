@@ -241,7 +241,7 @@ func (m Model) View() string {
 				fmt.Sprintf("%d mm", res.BeltLength),
 				fmt.Sprintf("%.1f mm", res.BeltWidth),
 				fmt.Sprintf("%.2f mm", res.Slack),
-				formatAvailabilityBool(res.IsAvailable),
+				FormatAvailabilityBool(res.IsAvailable),
 			)
 		}
 
@@ -309,7 +309,7 @@ func (m Model) updateResults() Model {
 	return m
 }
 
-func formatAvailabilityBool(isAvailable bool) string {
+func FormatAvailabilityBool(isAvailable bool) string {
 	if isAvailable {
 		return "Yes"
 	} else {
