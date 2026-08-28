@@ -165,8 +165,7 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 
 func (m Model) View() string {
 	title := titleStyle.Render("FRC Pulley Optimizer ")
-	slashes := slashStyle.Render("///////////////////////////////////////////////////////////////////////////////////////////")
-	header := title + slashes + "\n\n"
+	header := title + "\n\n"
 
 	leftColumn := ""
 	for i, f := range m.Inputs {
@@ -256,8 +255,7 @@ func (m Model) View() string {
 		resultBoxStyle.Render(rightColumnContent),
 	)
 
-	endSlashes := slashStyle.Render("\n\n////////////////////////////////////////////////////////////////////////////////////////////////////////////////")
-	footer := endSlashes + helpStyle.Render("\n\nPress `up/down` to navigate, `left/right` to change values, `q` to quit")
+	footer := helpStyle.Render("\n\nPress q to quit, `up/down` to navigate, `left/right` to change values")
 
 	return header + mainContent + footer
 }

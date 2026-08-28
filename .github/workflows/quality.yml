@@ -1,0 +1,29 @@
+name: Quality Check
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  format-and-lint:
+    name: Format and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set Up GO
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.x'
+
+    - name: Check Formatting
+      run: |
+        go fmt ./...
+        git diff --exit-code
+
+    - name: Run Lint
+      run: go vet ./...
