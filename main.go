@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -23,6 +24,7 @@ type FormField struct {
 	Name     string
 	Type     FieldType
 	Input    textinput.Model
+	Advanced bool
 	Checked  bool // Used only if checkbox
 	Visible  bool
 	Options  []string // Used by selector
@@ -48,11 +50,35 @@ func initialModel() Model {
 	ratio.SetValue("1.0")
 	ratio.Prompt = "Target Ratio: "
 
+	maxSlack := textinput.New()
+	maxSlack.Placeholder = "0.2"
+	maxSlack.SetValue("0.2")
+	maxSlack.Prompt = "Max Slack (mm): "
+
+	minSlack := textinput.New()
+	minSlack.Placeholder = "-0.5"
+	minSlack.SetValue("-0.5")
+	minSlack.Prompt = "Min Slack (mm): "
+
+	maxPulley := textinput.New()
+	maxPulley.Placeholder = "100"
+	maxPulley.SetValue("100")
+	maxPulley.Prompt = "Max Pulley (T): "
+
+	minPulley := textinput.New()
+	minPulley.Placeholder = "8"
+	minPulley.SetValue("8")
+	minPulley.Prompt = "Min Pulley (T): "
+
 	fields := []FormField{
-		{Name: "C2C", Type: TypeNumber, Input: c2c, Visible: true},
-		{Name: "Unit", Type: TypeSelector, Visible: true, Options: []string{"in", "mm"}, Selected: 0},
-		{Name: "Ratio", Type: TypeNumber, Input: ratio, Visible: true},
-		{Name: "Use Available Belts", Type: TypeCheckbox, Visible: true, Checked: true},
+		{Name: "C2C", Type: TypeNumber, Input: c2c, Advanced: false, Visible: true},
+		{Name: "Unit", Type: TypeSelector, Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: 0},
+		{Name: "Ratio", Type: TypeNumber, Input: ratio, Advanced: false, Visible: true},
+		{Name: "Use Available Belts", Type: TypeCheckbox, Advanced: false, Visible: true, Checked: true},
+		{Name: "Max Slack", Type: TypeNumber, Input: maxSlack, Advanced: true, Visible: false},
+		{Name: "Min Slack", Type: TypeNumber, Input: minSlack, Advanced: true, Visible: false},
+		{Name: "Max Pulley", Type: TypeNumber, Input: maxPulley, Advanced: true, Visible: false},
+		{Name: "Min Pulley", Type: TypeNumber, Input: minPulley, Advanced: true, Visible: false},
 	}
 
 	fields, _ = updateFocusStyles(fields, 0)
@@ -79,6 +105,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
+
+		case "a":
+			m = m.toggleAdvancedOptions()
+			passToInput = false
+			var cmd tea.Cmd
+			m.Inputs, cmd = updateFocusStyles(m.Inputs, m.Focus)
+			cmds = append(cmds, cmd)
 
 		case "up", "down", "tab", "shift+tab":
 			if msg.String() == "up" || msg.String() == "shift+tab" {
@@ -113,8 +146,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				step := 0.1
-				if m.Inputs[m.Focus].Name == "Ratio" {
-					step = .2
+				switch m.Inputs[m.Focus].Name {
+				case "Ratio":
+					step = 0.2
+				case "Max Slack", "Min Slack":
+					step = 0.01
+				case "Max Pulley", "Min Pulley":
+					step = 1
 				}
 
 				if msg.String() == "right" {
@@ -123,7 +161,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					val -= step
 				}
 
-				f.Input.SetValue(fmt.Sprintf("%.1f", val))
+				f.Input.SetValue(formatFloat(val))
+				f.Input.CursorEnd()
 			case TypeSelector:
 				if msg.String() == "right" {
 					f.Selected = (f.Selected + 1) % len(f.Options)
@@ -255,7 +294,7 @@ func (m Model) View() string {
 		resultBoxStyle.Render(rightColumnContent),
 	)
 
-	footer := helpStyle.Render("\n\nPress q to quit, `up/down` to navigate, `left/right` to change values")
+	footer := helpStyle.Render("\n\nPress `q` to quit, `a` for advanced options, `up/down` to navigate, `left/right` to change values")
 
 	return header + mainContent + footer
 }
@@ -294,8 +333,12 @@ func (m Model) updateResults() Model {
 	unitVal := m.Inputs[1].Options[m.Inputs[1].Selected]
 	ratioVal := m.Inputs[2].Input.Value()
 	useAvailableBelts := m.Inputs[3].Checked
+	maxSlack := m.Inputs[4].Input.Value()
+	minSlack := m.Inputs[5].Input.Value()
+	maxPulley := m.Inputs[6].Input.Value()
+	minPulley := m.Inputs[7].Input.Value()
 
-	results, err := RunCalculator(c2cVal, ratioVal, unitVal, useAvailableBelts)
+	results, err := RunCalculator(c2cVal, ratioVal, unitVal, useAvailableBelts, maxSlack, minSlack, maxPulley, minPulley)
 	if err != nil {
 		m.ErrorMsg = err.Error()
 		m.Results = nil
@@ -305,4 +348,30 @@ func (m Model) updateResults() Model {
 	}
 
 	return m
+}
+
+func (m Model) toggleAdvancedOptions() Model {
+	for i := range m.Inputs {
+		if m.Inputs[i].Advanced {
+			m.Inputs[i].Visible = !m.Inputs[i].Visible
+		}
+	}
+
+	if !m.Inputs[m.Focus].Visible {
+		for {
+			m.Focus = (m.Focus - 1 + len(m.Inputs)) % len(m.Inputs)
+			if m.Inputs[m.Focus].Visible {
+				break
+			}
+		}
+	}
+
+	return m
+}
+
+func formatFloat(val float64) string {
+	s := fmt.Sprintf("%.3f", val)
+	s = strings.TrimRight(s, "0")
+	s = strings.TrimSuffix(s, ".")
+	return s
 }
