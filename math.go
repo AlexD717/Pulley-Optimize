@@ -93,7 +93,14 @@ func RunCalculator(
 			default:
 			}
 
+			r1 := (float64(pulley1) * 5) / (math.Pi * 2.0)
+
 			for pulley2 := minPulley; pulley2 <= maxPulley; pulley2++ {
+				r2 := (float64(pulley2) * 5) / (math.Pi * 2.0)
+
+				if r1+r2 >= c2c {
+					continue
+				}
 
 				slack := CalculateSlack(c2c, pulley1, pulley2, belt.Length, 5)
 
