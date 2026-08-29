@@ -212,6 +212,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case " ", "enter":
+			inputChanged = true
 			f := &m.Inputs[m.Focus]
 			switch f.Type {
 			case TypeCheckbox:
@@ -356,7 +357,7 @@ func (m Model) View() string {
 	mainContent := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		leftColumnStyle.Render(leftColumn),
-		RenderWithMinSize(rightColumnContent, 69, 16),
+		RenderWithMinSize(rightColumnContent, 69, 18),
 	)
 
 	footer := helpStyle.Render("\n\nPress `q` to quit, `a` for advanced options, `up/down` to navigate, `left/right` to change values")
