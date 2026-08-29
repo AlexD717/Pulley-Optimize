@@ -356,7 +356,7 @@ func (m Model) View() string {
 	mainContent := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		leftColumnStyle.Render(leftColumn),
-		resultBoxStyle.Render(rightColumnContent),
+		RenderWithMinSize(rightColumnContent, 69, 16),
 	)
 
 	footer := helpStyle.Render("\n\nPress `q` to quit, `a` for advanced options, `up/down` to navigate, `left/right` to change values")

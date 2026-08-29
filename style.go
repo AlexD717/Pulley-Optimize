@@ -1,6 +1,8 @@
 package main
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/lipgloss"
+)
 
 var (
 	titleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#009bce")).Bold(true)
@@ -22,3 +24,13 @@ var (
 	resultsTableStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff"))
 	leftColumnStyle   = lipgloss.NewStyle().PaddingRight(5)
 )
+
+func RenderWithMinSize(content string, minWidth int, minHeight int) string {
+	actualWidth := lipgloss.Width(content) + 4 // + 4 to account for default table padding
+	actualHeight := lipgloss.Height(content) + 2
+
+	finalWidth := max(actualWidth, minWidth)
+	finalHeight := max(actualHeight, minHeight)
+
+	return resultBoxStyle.Width(finalWidth).Height(finalHeight).Render(content)
+}
