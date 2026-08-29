@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"math"
@@ -27,6 +28,7 @@ type PulleyResult struct {
 }
 
 func RunCalculator(
+	ctx context.Context,
 	c2cStr string,
 	ratioStr string,
 	unit string,
@@ -84,7 +86,15 @@ func RunCalculator(
 	var pulleyResults []PulleyResult
 	for _, belt := range belts {
 		for pulley1 := minPulley; pulley1 <= maxPulley; pulley1++ {
+
+			select {
+			case <-ctx.Done():
+				return nil, context.Canceled
+			default:
+			}
+
 			for pulley2 := minPulley; pulley2 <= maxPulley; pulley2++ {
+
 				slack := CalculateSlack(c2c, pulley1, pulley2, belt.Length, 5)
 
 				if slack > maxSlack || slack < minSlack {

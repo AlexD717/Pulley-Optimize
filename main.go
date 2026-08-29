@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -31,12 +33,20 @@ type FormField struct {
 	Selected int      // Used by selector
 }
 
+type CalcResultMessage struct {
+	results []PulleyResult
+	err     error
+}
+
 type Model struct {
 	Inputs            []FormField
 	Focus             int
 	UseAvailableBelts bool
 	Results           []PulleyResult
 	ErrorMsg          string
+	Calculating       bool
+	Spinner           spinner.Model
+	CancelCalc        context.CancelFunc
 }
 
 func initialModel() Model {
@@ -83,24 +93,51 @@ func initialModel() Model {
 
 	fields, _ = updateFocusStyles(fields, 0)
 
+	s := spinner.New()
+	s.Spinner = spinner.MiniDot
+	s.Style = spinnerStyle
+
 	return Model{
 		Inputs:            fields,
 		Focus:             0,
 		UseAvailableBelts: true,
 		Results:           []PulleyResult{},
 		ErrorMsg:          "",
+		Calculating:       false,
+		Spinner:           s,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return textinput.Blink
+	return tea.Batch(textinput.Blink, m.Spinner.Tick)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	passToInput := true
+	inputChanged := false
 
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.Spinner, cmd = m.Spinner.Update(msg)
+		cmds = append(cmds, cmd)
+
+	case CalcResultMessage:
+		if msg.err == context.Canceled {
+			return m, nil
+		}
+
+		m.Calculating = false
+		if msg.err != nil {
+			m.ErrorMsg = msg.err.Error()
+			m.Results = nil
+		} else {
+			m.ErrorMsg = ""
+			m.Results = msg.results
+		}
+		return m, tea.Batch(cmds...)
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
@@ -136,6 +173,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "left", "right":
 			passToInput = false
+			inputChanged = true
 			f := &m.Inputs[m.Focus]
 			switch f.Type {
 			case TypeNumber:
@@ -185,11 +223,36 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if passToInput {
+		oldVal := m.Inputs[m.Focus].Input.Value()
 		cmd := m.updateInputs(msg)
 		cmds = append(cmds, cmd)
+
+		if m.Inputs[m.Focus].Input.Value() != oldVal {
+			inputChanged = true
+		}
 	}
 
-	m = m.updateResults()
+	if inputChanged {
+		m.Calculating = true
+
+		if m.CancelCalc != nil {
+			m.CancelCalc()
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		m.CancelCalc = cancel
+
+		c2cVal := m.Inputs[0].Input.Value()
+		unitVal := m.Inputs[1].Options[m.Inputs[1].Selected]
+		ratioVal := m.Inputs[2].Input.Value()
+		useAvailableBelts := m.Inputs[3].Checked
+		maxSlack := m.Inputs[4].Input.Value()
+		minSlack := m.Inputs[5].Input.Value()
+		maxPulley := m.Inputs[6].Input.Value()
+		minPulley := m.Inputs[7].Input.Value()
+
+		cmds = append(cmds, updateResults(ctx, c2cVal, ratioVal, unitVal, useAvailableBelts, maxSlack, minSlack, maxPulley, minPulley))
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -260,7 +323,9 @@ func (m Model) View() string {
 
 	var resultsString string
 
-	if m.ErrorMsg != "" {
+	if m.Calculating {
+		resultsString = m.Spinner.View() + " Calculating..."
+	} else if m.ErrorMsg != "" {
 		resultsString = errorStyle.Render(m.ErrorMsg)
 	} else if len(m.Results) == 0 {
 		resultsString = "No valid combination found"
@@ -306,6 +371,27 @@ func main() {
 	}
 }
 
+func updateResults(
+	ctx context.Context,
+	c2cStr string,
+	ratioStr string,
+	unit string,
+	useBelts bool,
+	maxSlackString string,
+	minSlackString string,
+	maxPulleyString string,
+	minPulleyString string,
+) tea.Cmd {
+	return func() tea.Msg {
+		results, err := RunCalculator(ctx, c2cStr, ratioStr, unit, useBelts, maxSlackString, minSlackString, maxPulleyString, minPulleyString)
+
+		return CalcResultMessage{
+			results: results,
+			err:     err,
+		}
+	}
+}
+
 func updateFocusStyles(fields []FormField, focus int) ([]FormField, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -326,28 +412,6 @@ func updateFocusStyles(fields []FormField, focus int) ([]FormField, tea.Cmd) {
 	}
 
 	return fields, tea.Batch(cmds...)
-}
-
-func (m Model) updateResults() Model {
-	c2cVal := m.Inputs[0].Input.Value()
-	unitVal := m.Inputs[1].Options[m.Inputs[1].Selected]
-	ratioVal := m.Inputs[2].Input.Value()
-	useAvailableBelts := m.Inputs[3].Checked
-	maxSlack := m.Inputs[4].Input.Value()
-	minSlack := m.Inputs[5].Input.Value()
-	maxPulley := m.Inputs[6].Input.Value()
-	minPulley := m.Inputs[7].Input.Value()
-
-	results, err := RunCalculator(c2cVal, ratioVal, unitVal, useAvailableBelts, maxSlack, minSlack, maxPulley, minPulley)
-	if err != nil {
-		m.ErrorMsg = err.Error()
-		m.Results = nil
-	} else {
-		m.ErrorMsg = ""
-		m.Results = results
-	}
-
-	return m
 }
 
 func (m Model) toggleAdvancedOptions() Model {
