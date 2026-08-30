@@ -156,7 +156,7 @@ func CalculateSlack(targetC2C float64, pulley1 int, pulley2 int, beltLength floa
 	}
 	actualC2C := (pitch / 4.0) * (y + math.Sqrt(radicand))
 
-	return targetC2C - actualC2C
+	return actualC2C - targetC2C
 }
 
 func LoadInventory(filepath string) []Belt {

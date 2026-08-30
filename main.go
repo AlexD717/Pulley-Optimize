@@ -25,6 +25,7 @@ const (
 type FormField struct {
 	Name     string
 	Type     FieldType
+	HelpText string
 	Input    textinput.Model
 	Advanced bool
 	Checked  bool // Used only if checkbox
@@ -61,13 +62,13 @@ func initialModel() Model {
 	ratio.Prompt = "Target Ratio: "
 
 	maxSlack := textinput.New()
-	maxSlack.Placeholder = "0.2"
-	maxSlack.SetValue("0.2")
+	maxSlack.Placeholder = "0.5"
+	maxSlack.SetValue("0.5")
 	maxSlack.Prompt = "Max Slack (mm): "
 
 	minSlack := textinput.New()
-	minSlack.Placeholder = "-0.5"
-	minSlack.SetValue("-0.5")
+	minSlack.Placeholder = "-0.2"
+	minSlack.SetValue("-0.2")
 	minSlack.Prompt = "Min Slack (mm): "
 
 	maxPulley := textinput.New()
@@ -81,14 +82,14 @@ func initialModel() Model {
 	minPulley.Prompt = "Min Pulley (T): "
 
 	fields := []FormField{
-		{Name: "C2C", Type: TypeNumber, Input: c2c, Advanced: false, Visible: true},
-		{Name: "Unit", Type: TypeSelector, Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: 0},
-		{Name: "Ratio", Type: TypeNumber, Input: ratio, Advanced: false, Visible: true},
-		{Name: "Use Available Belts", Type: TypeCheckbox, Advanced: false, Visible: true, Checked: true},
-		{Name: "Max Slack", Type: TypeNumber, Input: maxSlack, Advanced: true, Visible: false},
-		{Name: "Min Slack", Type: TypeNumber, Input: minSlack, Advanced: true, Visible: false},
-		{Name: "Max Pulley", Type: TypeNumber, Input: maxPulley, Advanced: true, Visible: false},
-		{Name: "Min Pulley", Type: TypeNumber, Input: minPulley, Advanced: true, Visible: false},
+		{Name: "C2C", Type: TypeNumber, HelpText: "Center to center distance (units in following prompt) between the two pulleys", Input: c2c, Advanced: false, Visible: true},
+		{Name: "Unit", Type: TypeSelector, HelpText: "Unit of the center to center distance in the above question", Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: 0},
+		{Name: "Ratio", Type: TypeNumber, HelpText: "Ideal ratio of the pulleys. A ratio of 2 means double the torque, half the speed", Input: ratio, Advanced: false, Visible: true},
+		{Name: "Use Available Belts", Type: TypeCheckbox, HelpText: "If enabled will only use belts from the local belts.csv file (Length, Width, Count format)", Advanced: false, Visible: true, Checked: true},
+		{Name: "Max Slack", Type: TypeNumber, HelpText: "Discards results with a slack higher than this value (positive slack means looser)", Input: maxSlack, Advanced: true, Visible: false},
+		{Name: "Min Slack", Type: TypeNumber, HelpText: "Discards results with a slack lower than this value (negative slack means tighter)", Input: minSlack, Advanced: true, Visible: false},
+		{Name: "Max Pulley", Type: TypeNumber, HelpText: "Maximum pulley size to consider", Input: maxPulley, Advanced: true, Visible: false},
+		{Name: "Min Pulley", Type: TypeNumber, HelpText: "Minimum pulley size to consider", Input: minPulley, Advanced: true, Visible: false},
 	}
 
 	fields, _ = updateFocusStyles(fields, 0)
@@ -360,7 +361,12 @@ func (m Model) View() string {
 		RenderWithMinSize(rightColumnContent, 69, 18),
 	)
 
-	footer := helpStyle.Render("\n\nPress `q` to quit, `a` for advanced options, `up/down` to navigate, `left/right` to change values")
+	footerText := "\n\n"
+	if m.Inputs[m.Focus].HelpText != "" {
+		footerText += m.Inputs[m.Focus].HelpText
+	}
+	footerText += "\nPress `q` to quit, `a` for advanced options, `up/down` to navigate, `left/right` to change values"
+	footer := helpStyle.Render(footerText)
 
 	return header + mainContent + footer
 }
