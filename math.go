@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"math"
@@ -26,7 +27,17 @@ type PulleyResult struct {
 	Score      float64
 }
 
-func RunCalculator(c2cStr string, ratioStr string, unit string, useBelts bool) ([]PulleyResult, error) {
+func RunCalculator(
+	ctx context.Context,
+	c2cStr string,
+	ratioStr string,
+	unit string,
+	useBelts bool,
+	maxSlackString string,
+	minSlackString string,
+	maxPulleyString string,
+	minPulleyString string,
+) ([]PulleyResult, error) {
 	c2c, err := strconv.ParseFloat(c2cStr, 64)
 	if err != nil || c2c <= 0 {
 		return []PulleyResult{}, fmt.Errorf("Invalid C2C Distance: must be a number greater than 0")
@@ -35,6 +46,26 @@ func RunCalculator(c2cStr string, ratioStr string, unit string, useBelts bool) (
 	ratio, err := strconv.ParseFloat(ratioStr, 64)
 	if err != nil || ratio <= 0 {
 		return []PulleyResult{}, fmt.Errorf("Invalid Ratio: must be a number greater than 0")
+	}
+
+	maxSlack, err := strconv.ParseFloat(maxSlackString, 64)
+	if err != nil || maxSlack <= 0 {
+		return []PulleyResult{}, fmt.Errorf("Invalid Max Slack: must be a number greater than 0")
+	}
+
+	minSlack, err := strconv.ParseFloat(minSlackString, 64)
+	if err != nil || minSlack >= 0 {
+		return []PulleyResult{}, fmt.Errorf("Invalid Min Slack: must be a number less than 0")
+	}
+
+	maxPulley, err := strconv.Atoi(maxPulleyString)
+	if err != nil || maxPulley <= 1 {
+		return []PulleyResult{}, fmt.Errorf("Invalid Max Pulley: must be a integer greater than 1")
+	}
+
+	minPulley, err := strconv.Atoi(minPulleyString)
+	if err != nil || minPulley >= maxPulley {
+		return []PulleyResult{}, fmt.Errorf("Invalid Min Pulley: must be a integer less than max pulley")
 	}
 
 	if unit == "in" {
@@ -49,18 +80,28 @@ func RunCalculator(c2cStr string, ratioStr string, unit string, useBelts bool) (
 		belts = GenerateDefaultBelts()
 	}
 
-	minPulley := 8
-	maxPulley := 100
-	maxSlack := 0.2
-	minSlack := -0.5
-
 	slackPenaltyMult := 15
 	ratioPenaltyMult := 5
 
 	var pulleyResults []PulleyResult
 	for _, belt := range belts {
 		for pulley1 := minPulley; pulley1 <= maxPulley; pulley1++ {
+
+			select {
+			case <-ctx.Done():
+				return nil, context.Canceled
+			default:
+			}
+
+			r1 := (float64(pulley1) * 5) / (math.Pi * 2.0)
+
 			for pulley2 := minPulley; pulley2 <= maxPulley; pulley2++ {
+				r2 := (float64(pulley2) * 5) / (math.Pi * 2.0)
+
+				if r1+r2 >= c2c {
+					continue
+				}
+
 				slack := CalculateSlack(c2c, pulley1, pulley2, belt.Length, 5)
 
 				if slack > maxSlack || slack < minSlack {
