@@ -16,6 +16,18 @@ type AppConfig struct {
 	MinPulley         string `json:"min-pulley"`
 }
 
+func defaultConfig() AppConfig {
+	return AppConfig{
+		UnitSelected:      0,
+		Ratio:             "1.0",
+		UseAvailableBelts: true,
+		MaxSlack:          "0.5",
+		MinSlack:          "-0.2",
+		MaxPulley:         "100",
+		MinPulley:         "8",
+	}
+}
+
 func getConfigPath() (string, error) {
 	exePath, err := os.Executable()
 	if err != nil {
@@ -27,15 +39,7 @@ func getConfigPath() (string, error) {
 }
 
 func loadConfig() AppConfig {
-	cfg := AppConfig{
-		UnitSelected:      0,
-		Ratio:             "1.0",
-		UseAvailableBelts: true,
-		MaxSlack:          "0.5",
-		MinSlack:          "-0.2",
-		MaxPulley:         "100",
-		MinPulley:         "8",
-	}
+	cfg := defaultConfig()
 
 	path, err := getConfigPath()
 	if err == nil {

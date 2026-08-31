@@ -50,8 +50,13 @@ type Model struct {
 	CancelCalc        context.CancelFunc
 }
 
-func initialModel() Model {
-	cfg := loadConfig()
+func initialModel(useConfig bool) Model {
+	var cfg AppConfig
+	if useConfig {
+		cfg = loadConfig()
+	} else {
+		cfg = defaultConfig()
+	}
 
 	c2c := textinput.New()
 	c2c.Placeholder = "0"
@@ -100,7 +105,7 @@ func initialModel() Model {
 	s.Spinner = spinner.MiniDot
 	s.Style = spinnerStyle
 
-	return Model{
+	m := Model{
 		Inputs:            fields,
 		Focus:             0,
 		UseAvailableBelts: true,
@@ -109,6 +114,12 @@ func initialModel() Model {
 		Calculating:       false,
 		Spinner:           s,
 	}
+
+	if !useConfig {
+		saveConfig(m)
+	}
+
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
@@ -146,6 +157,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q", "esc":
 			saveConfig(m)
 			return m, tea.Quit
+
+		case "r":
+			newModel := initialModel(false)
+			return newModel, newModel.Init()
 
 		case "a":
 			m = m.toggleAdvancedOptions()
@@ -368,14 +383,14 @@ func (m Model) View() string {
 	if m.Inputs[m.Focus].HelpText != "" {
 		footerText += m.Inputs[m.Focus].HelpText
 	}
-	footerText += "\nPress `q` to quit, `a` for advanced options, `up/down` to navigate, `left/right` to change values"
+	footerText += "\nPress `q` to quit, `r` to reset, `a` for advanced options, `up/down` to navigate, `left/right` to change values"
 	footer := helpStyle.Render(footerText)
 
 	return header + mainContent + footer
 }
 
 func main() {
-	if _, err := tea.NewProgram(initialModel()).Run(); err != nil {
+	if _, err := tea.NewProgram(initialModel(true)).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
