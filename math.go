@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -77,7 +78,7 @@ func RunCalculator(
 
 	var belts []Belt
 	if useBelts {
-		belts = LoadInventory("belts.csv")
+		belts = LoadInventory()
 	} else {
 		belts = GenerateDefaultBelts()
 	}
@@ -194,8 +195,15 @@ func CalculateSlack(targetC2C float64, pulley1 int, pulley2 int, beltLength floa
 	return actualC2C - targetC2C
 }
 
-func LoadInventory(filepath string) []Belt {
-	file, err := os.Open(filepath)
+func LoadInventory() []Belt {
+	exePath, err := os.Executable()
+	if err != nil {
+		return GenerateDefaultBelts()
+	}
+	exeDir := filepath.Dir(exePath)
+	csvPath := filepath.Join(exeDir, "belts.csv")
+
+	file, err := os.Open(csvPath)
 	if err != nil {
 		return GenerateDefaultBelts()
 	}

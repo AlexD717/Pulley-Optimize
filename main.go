@@ -51,6 +51,8 @@ type Model struct {
 }
 
 func initialModel() Model {
+	cfg := loadConfig()
+
 	c2c := textinput.New()
 	c2c.Placeholder = "0"
 	c2c.Prompt = "Target C2C Distance: "
@@ -58,34 +60,34 @@ func initialModel() Model {
 
 	ratio := textinput.New()
 	ratio.Placeholder = "1.0"
-	ratio.SetValue("1.0")
+	ratio.SetValue(cfg.Ratio)
 	ratio.Prompt = "Target Ratio: "
 
 	maxSlack := textinput.New()
 	maxSlack.Placeholder = "0.5"
-	maxSlack.SetValue("0.5")
+	maxSlack.SetValue(cfg.MaxSlack)
 	maxSlack.Prompt = "Max Slack (mm): "
 
 	minSlack := textinput.New()
 	minSlack.Placeholder = "-0.2"
-	minSlack.SetValue("-0.2")
+	minSlack.SetValue(cfg.MinSlack)
 	minSlack.Prompt = "Min Slack (mm): "
 
 	maxPulley := textinput.New()
 	maxPulley.Placeholder = "100"
-	maxPulley.SetValue("100")
+	maxPulley.SetValue(cfg.MaxPulley)
 	maxPulley.Prompt = "Max Pulley (T): "
 
 	minPulley := textinput.New()
 	minPulley.Placeholder = "8"
-	minPulley.SetValue("8")
+	minPulley.SetValue(cfg.MinPulley)
 	minPulley.Prompt = "Min Pulley (T): "
 
 	fields := []FormField{
 		{Name: "C2C", Type: TypeNumber, HelpText: "Center to center distance (units in following prompt) between the two pulleys", Input: c2c, Advanced: false, Visible: true},
-		{Name: "Unit", Type: TypeSelector, HelpText: "Unit of the center to center distance in the above question", Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: 0},
+		{Name: "Unit", Type: TypeSelector, HelpText: "Unit of the center to center distance in the above question", Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: cfg.UnitSelected},
 		{Name: "Ratio", Type: TypeNumber, HelpText: "Ideal ratio of the pulleys. A ratio of 2 means double the torque, half the speed", Input: ratio, Advanced: false, Visible: true},
-		{Name: "Use Available Belts", Type: TypeCheckbox, HelpText: "If enabled will only use belts from the local belts.csv file (Length, Width, Count format)", Advanced: false, Visible: true, Checked: true},
+		{Name: "Use Available Belts", Type: TypeCheckbox, HelpText: "If enabled will only use belts from the local belts.csv file (Length, Width, Count format)", Advanced: false, Visible: true, Checked: cfg.UseAvailableBelts},
 		{Name: "Max Slack", Type: TypeNumber, HelpText: "Discards results with a slack higher than this value (positive slack means looser)", Input: maxSlack, Advanced: true, Visible: false},
 		{Name: "Min Slack", Type: TypeNumber, HelpText: "Discards results with a slack lower than this value (negative slack means tighter)", Input: minSlack, Advanced: true, Visible: false},
 		{Name: "Max Pulley", Type: TypeNumber, HelpText: "Maximum pulley size to consider", Input: maxPulley, Advanced: true, Visible: false},
@@ -142,6 +144,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
+			saveConfig(m)
 			return m, tea.Quit
 
 		case "a":
