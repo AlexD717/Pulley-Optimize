@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Belt struct {
@@ -84,49 +86,82 @@ func RunCalculator(
 	ratioPenaltyMult := 5
 
 	var pulleyResults []PulleyResult
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	maxWorkers := runtime.NumCPU() - 1 // Leave at least 1 for the UI update
+	if maxWorkers < 1 {
+		maxWorkers = 1
+	}
+
+	sem := make(chan struct{}, maxWorkers)
+
 	for _, belt := range belts {
-		for pulley1 := minPulley; pulley1 <= maxPulley; pulley1++ {
+		wg.Add(1)
 
-			select {
-			case <-ctx.Done():
-				return nil, context.Canceled
-			default:
-			}
+		sem <- struct{}{}
 
-			r1 := (float64(pulley1) * 5) / (math.Pi * 2.0)
+		go func(b Belt) {
+			defer wg.Done()
+			defer func() { <-sem }()
 
-			for pulley2 := minPulley; pulley2 <= maxPulley; pulley2++ {
-				r2 := (float64(pulley2) * 5) / (math.Pi * 2.0)
+			var localResults []PulleyResult
 
-				if r1+r2 >= c2c {
-					continue
+			for pulley1 := minPulley; pulley1 <= maxPulley; pulley1++ {
+
+				select {
+				case <-ctx.Done():
+					return
+				default:
 				}
 
-				slack := CalculateSlack(c2c, pulley1, pulley2, belt.Length, 5)
+				r1 := (float64(pulley1) * 5) / (math.Pi * 2.0)
 
-				if slack > maxSlack || slack < minSlack {
-					continue
+				for pulley2 := minPulley; pulley2 <= maxPulley; pulley2++ {
+					r2 := (float64(pulley2) * 5) / (math.Pi * 2.0)
+
+					if r1+r2 >= c2c {
+						continue
+					}
+
+					slack := CalculateSlack(c2c, pulley1, pulley2, belt.Length, 5)
+
+					if slack > maxSlack || slack < minSlack {
+						continue
+					}
+					score := math.Abs(slack) * float64(slackPenaltyMult)
+
+					actualRatio := float64(pulley2) / float64(pulley1)
+					ratioError := math.Abs(actualRatio - ratio)
+					score += ratioError * float64(ratioPenaltyMult)
+
+					score += calculatePulleySizeScore(pulley1)
+					score += calculatePulleySizeScore(pulley2)
+
+					localResults = append(localResults, PulleyResult{
+						Pulley1:    pulley1,
+						Pulley2:    pulley2,
+						BeltLength: int(belt.Length),
+						BeltWidth:  belt.Width,
+						Slack:      slack,
+						Count:      belt.Count,
+						Score:      score,
+					})
 				}
-				score := math.Abs(slack) * float64(slackPenaltyMult)
-
-				actualRatio := float64(pulley2) / float64(pulley1)
-				ratioError := math.Abs(actualRatio - ratio)
-				score += ratioError * float64(ratioPenaltyMult)
-
-				score += calculatePulleySizeScore(pulley1)
-				score += calculatePulleySizeScore(pulley2)
-
-				pulleyResults = append(pulleyResults, PulleyResult{
-					Pulley1:    pulley1,
-					Pulley2:    pulley2,
-					BeltLength: int(belt.Length),
-					BeltWidth:  belt.Width,
-					Slack:      slack,
-					Count:      belt.Count,
-					Score:      score,
-				})
 			}
-		}
+
+			if len(localResults) > 0 {
+				mu.Lock()
+				pulleyResults = append(pulleyResults, localResults...)
+				mu.Unlock()
+			}
+		}(belt)
+	}
+
+	wg.Wait()
+
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 
 	sort.Slice(pulleyResults, func(i, j int) bool {
