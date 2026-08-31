@@ -25,6 +25,7 @@ const (
 type FormField struct {
 	Name     string
 	Type     FieldType
+	HelpText string
 	Input    textinput.Model
 	Advanced bool
 	Checked  bool // Used only if checkbox
@@ -49,7 +50,14 @@ type Model struct {
 	CancelCalc        context.CancelFunc
 }
 
-func initialModel() Model {
+func initialModel(useConfig bool) Model {
+	var cfg AppConfig
+	if useConfig {
+		cfg = loadConfig()
+	} else {
+		cfg = defaultConfig()
+	}
+
 	c2c := textinput.New()
 	c2c.Placeholder = "0"
 	c2c.Prompt = "Target C2C Distance: "
@@ -57,38 +65,38 @@ func initialModel() Model {
 
 	ratio := textinput.New()
 	ratio.Placeholder = "1.0"
-	ratio.SetValue("1.0")
+	ratio.SetValue(cfg.Ratio)
 	ratio.Prompt = "Target Ratio: "
 
 	maxSlack := textinput.New()
-	maxSlack.Placeholder = "0.2"
-	maxSlack.SetValue("0.2")
+	maxSlack.Placeholder = "0.5"
+	maxSlack.SetValue(cfg.MaxSlack)
 	maxSlack.Prompt = "Max Slack (mm): "
 
 	minSlack := textinput.New()
-	minSlack.Placeholder = "-0.5"
-	minSlack.SetValue("-0.5")
+	minSlack.Placeholder = "-0.2"
+	minSlack.SetValue(cfg.MinSlack)
 	minSlack.Prompt = "Min Slack (mm): "
 
 	maxPulley := textinput.New()
 	maxPulley.Placeholder = "100"
-	maxPulley.SetValue("100")
+	maxPulley.SetValue(cfg.MaxPulley)
 	maxPulley.Prompt = "Max Pulley (T): "
 
 	minPulley := textinput.New()
 	minPulley.Placeholder = "8"
-	minPulley.SetValue("8")
+	minPulley.SetValue(cfg.MinPulley)
 	minPulley.Prompt = "Min Pulley (T): "
 
 	fields := []FormField{
-		{Name: "C2C", Type: TypeNumber, Input: c2c, Advanced: false, Visible: true},
-		{Name: "Unit", Type: TypeSelector, Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: 0},
-		{Name: "Ratio", Type: TypeNumber, Input: ratio, Advanced: false, Visible: true},
-		{Name: "Use Available Belts", Type: TypeCheckbox, Advanced: false, Visible: true, Checked: true},
-		{Name: "Max Slack", Type: TypeNumber, Input: maxSlack, Advanced: true, Visible: false},
-		{Name: "Min Slack", Type: TypeNumber, Input: minSlack, Advanced: true, Visible: false},
-		{Name: "Max Pulley", Type: TypeNumber, Input: maxPulley, Advanced: true, Visible: false},
-		{Name: "Min Pulley", Type: TypeNumber, Input: minPulley, Advanced: true, Visible: false},
+		{Name: "C2C", Type: TypeNumber, HelpText: "Center to center distance (units in following prompt) between the two pulleys", Input: c2c, Advanced: false, Visible: true},
+		{Name: "Unit", Type: TypeSelector, HelpText: "Unit of the center to center distance in the above question", Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: cfg.UnitSelected},
+		{Name: "Ratio", Type: TypeNumber, HelpText: "Ideal ratio of the pulleys. A ratio of 2 means double the torque, half the speed", Input: ratio, Advanced: false, Visible: true},
+		{Name: "Use Available Belts", Type: TypeCheckbox, HelpText: "If enabled will only use belts from the local belts.csv file (Length, Width, Count format)", Advanced: false, Visible: true, Checked: cfg.UseAvailableBelts},
+		{Name: "Max Slack", Type: TypeNumber, HelpText: "Discards results with a slack higher than this value (positive slack means looser)", Input: maxSlack, Advanced: true, Visible: false},
+		{Name: "Min Slack", Type: TypeNumber, HelpText: "Discards results with a slack lower than this value (negative slack means tighter)", Input: minSlack, Advanced: true, Visible: false},
+		{Name: "Max Pulley", Type: TypeNumber, HelpText: "Maximum pulley size to consider", Input: maxPulley, Advanced: true, Visible: false},
+		{Name: "Min Pulley", Type: TypeNumber, HelpText: "Minimum pulley size to consider", Input: minPulley, Advanced: true, Visible: false},
 	}
 
 	fields, _ = updateFocusStyles(fields, 0)
@@ -97,7 +105,7 @@ func initialModel() Model {
 	s.Spinner = spinner.MiniDot
 	s.Style = spinnerStyle
 
-	return Model{
+	m := Model{
 		Inputs:            fields,
 		Focus:             0,
 		UseAvailableBelts: true,
@@ -106,6 +114,12 @@ func initialModel() Model {
 		Calculating:       false,
 		Spinner:           s,
 	}
+
+	if !useConfig {
+		saveConfig(m)
+	}
+
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
@@ -141,7 +155,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
+			saveConfig(m)
 			return m, tea.Quit
+
+		case "r":
+			newModel := initialModel(false)
+			return newModel, newModel.Init()
 
 		case "a":
 			m = m.toggleAdvancedOptions()
@@ -360,13 +379,18 @@ func (m Model) View() string {
 		RenderWithMinSize(rightColumnContent, 69, 18),
 	)
 
-	footer := helpStyle.Render("\n\nPress `q` to quit, `a` for advanced options, `up/down` to navigate, `left/right` to change values")
+	footerText := "\n\n"
+	if m.Inputs[m.Focus].HelpText != "" {
+		footerText += m.Inputs[m.Focus].HelpText
+	}
+	footerText += "\nPress `q` to quit, `r` to reset, `a` for advanced options, `up/down` to navigate, `left/right` to change values"
+	footer := helpStyle.Render(footerText)
 
 	return header + mainContent + footer
 }
 
 func main() {
-	if _, err := tea.NewProgram(initialModel()).Run(); err != nil {
+	if _, err := tea.NewProgram(initialModel(true)).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
