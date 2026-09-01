@@ -19,3 +19,7 @@ If you want to have the app use the belts your team has available, modify the `b
 ## Screenshots
 
 ![Screenshot 1](/assets/screenshot_1.png)
+_Windows Terminal_
+
+![Screenshot 2](/assets/screenshot_2.png)
+_Sample Linux Terminal_
