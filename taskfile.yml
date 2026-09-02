@@ -13,7 +13,7 @@ tasks:
       GOOS: windows
       GOARCH: amd64
     cmds:
-      - go build -o bin/encounter-manager.exe
+      - go build -o bin/pulley-optimize.exe
 
   build-linux:
     desc: "Compile for Linux"
@@ -21,4 +21,4 @@ tasks:
       GOOS: linux
       GOARCH: amd64
     cmds:
-      - go build -o bin/encounter-manager-linux
+      - go build -o bin/pulley-optimize-linux
