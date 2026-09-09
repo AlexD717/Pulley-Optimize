@@ -286,7 +286,7 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 }
 
 func (m Model) View() string {
-	title := titleStyle.Render("FRC Pulley Optimizer ")
+	title := titleStyle.Render("Pulley Optimizer ")
 	header := title + "\n\n"
 
 	leftColumn := ""

@@ -2,11 +2,11 @@
 
 [![Unit Test](https://github.com/AlexD717/Pulley-Optimize/actions/workflows/test.yml/badge.svg)](https://github.com/AlexD717/Pulley-Optimize/actions/workflows/test.yml) [![Build Test](https://github.com/AlexD717/Pulley-Optimize/actions/workflows/build.yml/badge.svg)](https://github.com/AlexD717/Pulley-Optimize/actions/workflows/build.yml) [![Quality Check](https://github.com/AlexD717/Pulley-Optimize/actions/workflows/quality.yml/badge.svg)](https://github.com/AlexD717/Pulley-Optimize/actions/workflows/quality.yml)
 
-A FRC CLI tool for calculating the ideal pulley combination given some parameters.
+A CLI tool for calculating 5mm pitch pulley combination given some parameters.
 
 ## Purpose
 
-While there are already many FRC belt optimizer tools, I have found that many teams now 3d print custom pulleys, allowing any pulley size to be used. Unlike other applications, this is designed to help you find the pulleys you should use (as any custom size can be easily printed) given a list of belts you already have (so you don't have to buy new ones), the C2C distance, and the targeted ratio.
+While there are already many FRC belt optimizer tools (which use a 5mm pitch), I have found that many teams now 3d print custom pulleys, allowing any pulley size to be used. Unlike other applications, this is designed to help you find the pulleys you should use (as any custom size can be easily printed) given a list of belts you already have (so you don't have to buy new ones), the C2C distance, and the targeted ratio.
 
 ## Installation & Setup
 
