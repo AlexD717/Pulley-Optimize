@@ -14,6 +14,8 @@ type AppConfig struct {
 	MinSlack          string `json:"min-slack"`
 	MaxPulley         string `json:"max-pulley"`
 	MinPulley         string `json:"min-pulley"`
+	SlackPenaltyMult  string `json:"slack-penalty-mul"`
+	RatioPenaltyMult  string `json:"ratio-penalty-mult"`
 }
 
 func defaultConfig() AppConfig {
@@ -25,6 +27,8 @@ func defaultConfig() AppConfig {
 		MinSlack:          "-0.2",
 		MaxPulley:         "100",
 		MinPulley:         "8",
+		SlackPenaltyMult:  "15",
+		RatioPenaltyMult:  "5",
 	}
 }
 
@@ -60,6 +64,8 @@ func saveConfig(m Model) {
 		MinSlack:          m.Inputs[5].Input.Value(),
 		MaxPulley:         m.Inputs[6].Input.Value(),
 		MinPulley:         m.Inputs[7].Input.Value(),
+		SlackPenaltyMult:  m.Inputs[9].Input.Value(),
+		RatioPenaltyMult:  m.Inputs[8].Input.Value(),
 	}
 
 	path, err := getConfigPath()

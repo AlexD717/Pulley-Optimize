@@ -40,6 +40,8 @@ func RunCalculator(
 	minSlackString string,
 	maxPulleyString string,
 	minPulleyString string,
+	slackPenaltyMultString string,
+	ratioPenaltyMultString string,
 ) ([]PulleyResult, error) {
 	c2c, err := strconv.ParseFloat(c2cStr, 64)
 	if err != nil || c2c <= 0 {
@@ -71,6 +73,16 @@ func RunCalculator(
 		return []PulleyResult{}, fmt.Errorf("Invalid Min Pulley: must be a integer less than max pulley")
 	}
 
+	slackPenaltyMult, err := strconv.ParseFloat(slackPenaltyMultString, 64)
+	if err != nil || slackPenaltyMult <= 0 {
+		return []PulleyResult{}, fmt.Errorf("Invalid Slack Penalty: must be a number greater than 0")
+	}
+
+	ratioPenaltyMult, err := strconv.ParseFloat(ratioPenaltyMultString, 64)
+	if err != nil || slackPenaltyMult <= 0 {
+		return []PulleyResult{}, fmt.Errorf("Invalid Ratio Penalty: must be a number greater than 0")
+	}
+
 	if unit == "in" {
 		c2c = c2c * 25.4
 		unit = "mm"
@@ -82,9 +94,6 @@ func RunCalculator(
 	} else {
 		belts = GenerateDefaultBelts()
 	}
-
-	slackPenaltyMult := 15
-	ratioPenaltyMult := 5
 
 	var pulleyResults []PulleyResult
 	var mu sync.Mutex
@@ -182,7 +191,7 @@ func CalculateSlack(targetC2C float64, pulley1 int, pulley2 int, beltLength floa
 	n1 := float64(pulley1)
 	n2 := float64(pulley2)
 
-	// Avoid using math.Pow for squaring numbers as thats significantly slower
+	// Avoid using math.Pow for squaring numbers as that's significantly slower
 	y := beltTeeth - (n1+n2)/2.0
 	diff := n2 - n1
 	x := (2.0 * (diff * diff)) / (math.Pi * math.Pi)

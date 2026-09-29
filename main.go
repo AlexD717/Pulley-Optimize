@@ -88,6 +88,16 @@ func initialModel(useConfig bool) Model {
 	minPulley.SetValue(cfg.MinPulley)
 	minPulley.Prompt = "Min Pulley (T): "
 
+	slackPenaltyMult := textinput.New()
+	slackPenaltyMult.Placeholder = "15"
+	slackPenaltyMult.SetValue(cfg.SlackPenaltyMult)
+	slackPenaltyMult.Prompt = "Slack Penalty: "
+
+	ratioPenaltyMult := textinput.New()
+	ratioPenaltyMult.Placeholder = "5"
+	ratioPenaltyMult.SetValue(cfg.RatioPenaltyMult)
+	ratioPenaltyMult.Prompt = "Ratio Penalty: "
+
 	fields := []FormField{
 		{Name: "C2C", Type: TypeNumber, HelpText: "Center to center distance (units in following prompt) between the two pulleys", Input: c2c, Advanced: false, Visible: true},
 		{Name: "Unit", Type: TypeSelector, HelpText: "Unit of the center to center distance in the above question", Advanced: false, Visible: true, Options: []string{"in", "mm"}, Selected: cfg.UnitSelected},
@@ -97,6 +107,8 @@ func initialModel(useConfig bool) Model {
 		{Name: "Min Slack", Type: TypeNumber, HelpText: "Discards results with a slack lower than this value (negative slack means tighter)", Input: minSlack, Advanced: true, Visible: false},
 		{Name: "Max Pulley", Type: TypeNumber, HelpText: "Maximum pulley size to consider", Input: maxPulley, Advanced: true, Visible: false},
 		{Name: "Min Pulley", Type: TypeNumber, HelpText: "Minimum pulley size to consider", Input: minPulley, Advanced: true, Visible: false},
+		{Name: "Slack Penalty", Type: TypeNumber, HelpText: "Penalty for slack being away from ideal center", Input: slackPenaltyMult, Advanced: true, Visible: false},
+		{Name: "Ratio Penalty", Type: TypeNumber, HelpText: "Penalty for ratio being away from target ratio", Input: ratioPenaltyMult, Advanced: true, Visible: false},
 	}
 
 	fields, _ = updateFocusStyles(fields, 0)
@@ -270,8 +282,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		minSlack := m.Inputs[5].Input.Value()
 		maxPulley := m.Inputs[6].Input.Value()
 		minPulley := m.Inputs[7].Input.Value()
+		slackPenalty := m.Inputs[8].Input.Value()
+		ratioPenalty := m.Inputs[9].Input.Value()
 
-		cmds = append(cmds, updateResults(ctx, c2cVal, ratioVal, unitVal, useAvailableBelts, maxSlack, minSlack, maxPulley, minPulley))
+		cmds = append(cmds, updateResults(ctx, c2cVal, ratioVal, unitVal, useAvailableBelts, maxSlack, minSlack, maxPulley, minPulley, slackPenalty, ratioPenalty))
 	}
 
 	return m, tea.Batch(cmds...)
@@ -406,9 +420,11 @@ func updateResults(
 	minSlackString string,
 	maxPulleyString string,
 	minPulleyString string,
+	slackPenaltyString string,
+	ratioPenaltyString string,
 ) tea.Cmd {
 	return func() tea.Msg {
-		results, err := RunCalculator(ctx, c2cStr, ratioStr, unit, useBelts, maxSlackString, minSlackString, maxPulleyString, minPulleyString)
+		results, err := RunCalculator(ctx, c2cStr, ratioStr, unit, useBelts, maxSlackString, minSlackString, maxPulleyString, minPulleyString, slackPenaltyString, ratioPenaltyString)
 
 		return CalcResultMessage{
 			results: results,

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="a49f6c50-12c1-4df8-8e5a-2cbe91c2a4d5" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/engine.go" beforeDir="false" afterPath="$PROJECT_DIR$/engine.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" url="file://$USER_HOME$/sdk/go1.27.1" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;AlexD717&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/AlexD717/Pulley-Optimize.git&quot;,
+    &quot;accountId&quot;: &quot;b3c90b69-1da8-47b0-b6ef-acda03d0dfa0&quot;
+  }
+}</component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="3.5834259118884673E-37" />
+      <entry key="MS500" value="5.270501625725549E-8" />
+      <entry key="S2" value="0.021939797770185794" />
+      <entry key="S5" value="0.40333175493876994" />
+      <entry key="S10" value="1.2072327376193592" />
+      <entry key="S30" value="2.650196935090728" />
+      <entry key="S60" value="3.250751239478307" />
+      <entry key="M2" value="3.6045409529380277" />
+      <entry key="M5" value="3.8364953672272857" />
+      <entry key="M10" value="3.917332613248896" />
+      <entry key="M15" value="3.944682911943263" />
+      <entry key="M30" value="3.9722385066239356" />
+      <entry key="H1" value="3.991727192060583" />
+      <entry key="H2" value="4.7168088277059415" />
+      <entry key="H4" value="12.200571727655962" />
+      <entry key="D1" value="66.04898398265946" />
+      <entry key="W1" value="91.77607929310018" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0" />
+      <entry key="S2" value="1.0" />
+      <entry key="S5" value="1.0" />
+      <entry key="S10" value="1.0" />
+      <entry key="S30" value="1.0" />
+      <entry key="S60" value="1.0" />
+      <entry key="M2" value="1.0" />
+      <entry key="M5" value="1.0" />
+      <entry key="M10" value="1.0" />
+      <entry key="M15" value="1.0000000000000002" />
+      <entry key="M30" value="1.000000079897927" />
+      <entry key="H1" value="1.0012951112612962" />
+      <entry key="H2" value="1.1649094618132698" />
+      <entry key="H4" value="2.8609213877862887" />
+      <entry key="D1" value="15.02179040383723" />
+      <entry key="W1" value="20.82256617432853" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="8.936069921543125E-5" />
+      <entry key="MS500" value="0.15496347143247186" />
+      <entry key="S2" value="0.6412559270518694" />
+      <entry key="S5" value="1.1716148412536185" />
+      <entry key="S10" value="2.031373130552456" />
+      <entry key="S30" value="3.560508732340092" />
+      <entry key="S60" value="4.19990296201423" />
+      <entry key="M2" value="4.577392366534391" />
+      <entry key="M5" value="4.825189897105719" />
+      <entry key="M10" value="4.911602694205986" />
+      <entry key="M15" value="4.940845597058729" />
+      <entry key="M30" value="4.9703111897250105" />
+      <entry key="H1" value="4.99205553401852" />
+      <entry key="H2" value="5.881178695977908" />
+      <entry key="H4" value="15.060933747908509" />
+      <entry key="D1" value="81.07033432974832" />
+      <entry key="W1" value="112.59855894245814" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3J7CUQThsK95RPa4dVrePHNwqaK" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Go Build.go build Go/.executor": "Run",
+    "Go Test.engine_test.go.executor": "Run",
+    "RunOnceActivity.GoLinterPluginOnboardingV2": "true",
+    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
+    "RunOnceActivity.GoOptimizationToolWindowEnableInLayout.v333333": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.analysis.ui.options.defaults": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "git.auto.fetch.suggestion.counter": "1",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/ad717/Documents/GitHub/Go/Pulley-Optimize/bin",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\ad717\Documents\GitHub\Go\Pulley-Optimize\bin" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Build.go build Go/">
+    <configuration name="go build Go/" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+      <module name="Pulley-Optimize" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="pulley-optimize" />
+      <directory value="$PROJECT_DIR$" />
+      <auto_managed_config_id value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="engine_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="Go" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/engine_test.go" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.engine_test.go" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-gosdk-63c95d513abe-08e7ff217c2b-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-262.10968.67" />
+        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-GO-262.10968.67" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a49f6c50-12c1-4df8-8e5a-2cbe91c2a4d5" name="Changes" comment="" />
+      <created>1789002735139</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1789002735139</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName=".gitattributes" />
+  </component>
+</project>

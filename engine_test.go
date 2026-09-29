@@ -151,7 +151,7 @@ func TestCalculator(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			resultPulleys, resultError := RunCalculator(ctx, tt.c2cStr, tt.ratioStr, tt.unit, tt.useBelts, tt.maxSlack, tt.minSlack, tt.maxPulley, tt.minPulley)
+			resultPulleys, resultError := RunCalculator(ctx, tt.c2cStr, tt.ratioStr, tt.unit, tt.useBelts, tt.maxSlack, tt.minSlack, tt.maxPulley, tt.minPulley, "15", "5")
 
 			if (resultError != nil) != tt.expectedErr {
 				t.Errorf("RunCalculator error = %v, expectedErr %v", resultError, tt.expectedErr)
