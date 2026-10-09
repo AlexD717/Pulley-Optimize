@@ -7,6 +7,14 @@ tasks:
       - task: build-windows
       - task: build-linux
 
+  clean:
+    desc: "Cleans up build artifacts"
+    cmds:
+      - cmd: rm -rf dist bin windows.zip linux.zip
+        platforms: [linux, darwin]
+      - cmd: cmd /c "if exist dist rmdir /s /q dist & if exist bin rmdir /s /q bin & if exist windows.zip del /f /q windows.zip & if exist linux.zip del /f /q linux.zip"
+        platforms: [windows]
+
   build-windows:
     desc: "Compile for Windows"
     env:
@@ -22,3 +30,19 @@ tasks:
       GOARCH: amd64
     cmds:
       - go build -o bin/pulley-optimize-linux
+
+  package:
+    desc: "Bundle in zip files"
+    deps: [clean, default]
+    cmds:
+      - cmd: |
+          mkdir -p dist/windows dist/linux
+          cp bin/pulley-optimize.exe belts.csv dist/windows/
+          (cd dist/windows && zip -r ../windows.zip .)
+          cp bin/pulley-optimize-linux belts.csv dist/linux/
+          (cd dist/linux && zip -r ../linux.zip .)
+        platforms: [linux, darwin]
+
+      - cmd: |
+          powershell -Command "New-Item -ItemType Directory -Force -Path dist/windows, dist/linux; Copy-Item bin/pulley-optimize.exe, belts.csv -Destination dist/windows; Compress-Archive -Path dist/windows/* -DestinationPath dist/windows.zip -Force; Copy-Item bin/pulley-optimize-linux, belts.csv -Destination dist/linux; Compress-Archive -Path dist/linux/* -DestinationPath dist/linux.zip -Force"
+        platforms: [windows]
