@@ -37,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_TITLE=$(gh pr list --state merged --search "${{ github.sha }}" --json title --jq '.[0].title')
-          if if [ -n "$PR_TITLE" ] && [ "$PR_TITLE" != "null" ]; then; then
+          if [ -n "$PR_TITLE" ] && [ "$PR_TITLE" != "null" ]; then
             CLEAN_TAG=$(echo "$PR_TITLE" | tr ' ' '-' | tr -cd '[:alnum:]_.-')
             echo "TAG_NAME=$CLEAN_TAG" >> "$GITHUB_OUTPUT"
             echo "RELEASE_NAME=$PR_TITLE" >> "$GITHUB_OUTPUT"
