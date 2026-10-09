@@ -1,0 +1,62 @@
+name: Build and Release
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+      with:
+        fetch-depth: 0
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up GO
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: '3.x'
+
+      - name: Build and Package
+        run: task package
+
+      - name: Generate Release Tag
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_TITLE=$(gh pr list --state merged --search "${{ github.sha }}" --json title --jq '.[0].title')
+          if if [ -n "$PR_TITLE" ] && [ "$PR_TITLE" != "null" ]; then; then
+            CLEAN_TAG=$(echo "$PR_TITLE" | tr ' ' '-' | tr -cd '[:alnum:]_.-')
+            echo "TAG_NAME=$CLEAN_TAG" >> "$GITHUB_OUTPUT"
+            echo "RELEASE_NAME=$PR_TITLE" >> "$GITHUB_OUTPUT"
+          else
+            FALLBACK="v$(date +'%Y.%m.%d-%H%M%S')"
+            echo "TAG_NAME=$FALLBACK" >> "$GITHUB_OUTPUT"
+            echo "RELEASE_NAME=Release $FALLBACK" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+          name: ${{ steps.tag.outputs.RELEASE_NAME }}
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/windows.zip
+            dist/linux.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
